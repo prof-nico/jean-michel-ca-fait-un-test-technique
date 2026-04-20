@@ -10,6 +10,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Messenger\Exception\ValidationFailedException;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
@@ -28,14 +29,19 @@ class ScrapLinkedInCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $jsonData = file_get_contents('./datas/jean-paul.json');
+        $jsonData = file_get_contents('./datas/linkedin.json');
 
-        $linkedInDtos = $this->serializer->deserialize($jsonData, FreelanceJeanPaulDto::class . '[]', 'json');
+        $linkedInDtos = $this->serializer->deserialize($jsonData, FreelanceLinkedInDto::class . '[]', 'json');
 
         /** @var FreelanceLinkedInDto $linkedInDto */
         foreach ($linkedInDtos as $linkedInDto) {
-            $io->writeln("Dispatching message for $linkedInDto->url");
-            $this->bus->dispatch(new InsertFreelanceLinkedInMessage($linkedInDto));
+            try {
+                $this->bus->dispatch(new InsertFreelanceLinkedInMessage($linkedInDto));
+                $io->writeln("Dispatching message for $linkedInDto->url");
+            } catch (ValidationFailedException $e) {
+                //si on est chaud on fait une alerte monitorée
+                $io->warning("Skipping invalid entry: $linkedInDto->url");
+            }
         }
 
         return Command::SUCCESS;

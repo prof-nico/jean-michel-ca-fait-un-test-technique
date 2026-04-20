@@ -17,15 +17,17 @@ readonly class InsertFreelanceLinkedIn
     {
         $linkedInUrl = new LinkedInProfileUrl($dto->url);
 
-        $freelanceLinkedIn = $this->entityManager->getRepository(FreelanceLinkedIn::class)->findOneBy(['url' => $linkedInUrl]);
+        $freelanceLinkedIn = $this->entityManager->getRepository(FreelanceLinkedIn::class)->findOneBy(['url' => $linkedInUrl->getNormalizedUrl()]);
         if (!$freelanceLinkedIn) {
             $freelanceLinkedIn = new FreelanceLinkedIn();
             $freelanceLinkedIn->setUrl($linkedInUrl);
+            $this->entityManager->persist($freelanceLinkedIn);
         }
 
         if (!$freelanceLinkedIn->getFreelance()) {
             $freelance = new Freelance();
             $freelance->addFreelanceLinkedIn($freelanceLinkedIn);
+            $this->entityManager->persist($freelance);
         }
 
         $freelanceLinkedIn->setFirstName($dto->firstName);
