@@ -17,15 +17,39 @@ services:
       - 8000:8000
     environment:
       - IS_DOCKER=1
-    links:
+    depends_on:
       - mysql
+      - rabbitmq
+    volumes:
+      - .:/var/application
+    extra_hosts:
+      # Ensure that host.docker.internal is correctly defined on Linux
+      - host.docker.internal:host-gateway
+
+  worker:
+    build: .docker-dev/app
+    command: php bin/console messenger:consume insert_async --time-limit=3600 --env=prod
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
     volumes:
       - .:/var/application
 
   rabbitmq:
     image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-changeme}
     ports:
-      - 15676:15672
+      - "5672:5672"   # AMQP
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
