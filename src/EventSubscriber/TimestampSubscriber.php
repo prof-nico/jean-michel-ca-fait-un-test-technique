@@ -3,22 +3,32 @@
 namespace App\EventSubscriber;
 
 use Carbon\Carbon;
-use Doctrine\Common\EventSubscriber;
+use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
+use Doctrine\ORM\Event\PrePersistEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
-use Doctrine\Persistence\Event\LifecycleEventArgs;
+use Doctrine\ORM\Events;
 
-class TimestampSubscriber implements EventSubscriber
+#[AsDoctrineListener(event: Events::prePersist)]
+#[AsDoctrineListener(event: Events::preUpdate)]
+class TimestampSubscriber
 {
-    public function getSubscribedEvents(): array
+    public function prePersist(PrePersistEventArgs $args): void
     {
-        return [];
-    }
-
-    public function prePersist(LifecycleEventArgs $args): void
-    {
-
         $entity = $args->getObject();
         $now = new Carbon();
+
+        if (method_exists($entity, 'setCreatedAt')) {
+            $entity->setCreatedAt($now);
+        } else {
+            $reflection = new \ReflectionClass($entity);
+            if ($reflection->hasProperty('createdAt')) {
+                $property = $reflection->getProperty('createdAt');
+                $property->setAccessible(true);
+                if ($property->getValue($entity) === null) {
+                    $property->setValue($entity, $now);
+                }
+            }
+        }
 
         if (method_exists($entity, 'setUpdatedAt')) {
             $entity->setUpdatedAt($now);
@@ -38,19 +48,6 @@ class TimestampSubscriber implements EventSubscriber
     {
         $entity = $args->getObject();
         $now = new Carbon();
-
-        if (method_exists($entity, 'setCreatedat')) {
-            $entity->setCreatedAt($now);
-        } else {
-            $reflection = new \ReflectionClass($entity);
-            if ($reflection->hasProperty('createdAt')) {
-                $property = $reflection->getProperty('createdAt');
-                $property->setAccessible(true);
-                if ($property->getValue($entity) === null) {
-                    $property->setValue($entity, $now);
-                }
-            }
-        }
 
         if (method_exists($entity, 'setUpdatedAt')) {
             $entity->setUpdatedAt($now);
