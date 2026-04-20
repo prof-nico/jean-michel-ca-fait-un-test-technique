@@ -23,11 +23,18 @@ class ConsolidateFreelanceCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $freelances = $this->entityManager->getRepository(Freelance::class)->findAll();
-        /** @var Freelance $freelance */
-        foreach ($freelances as $freelance) {
-            $this->freelanceConsolider->consolidate($freelance);
-        }
+        $batchSize = 100;
+        $offset = 0;
+        do {
+            $freelances = $this->entityManager->getRepository(Freelance::class)->findBy([], null, $batchSize, $offset);
+            /** @var Freelance $freelance */
+            foreach ($freelances as $freelance) {
+                $this->freelanceConsolider->consolidate($freelance);
+            }
+            $this->entityManager->flush();
+            $this->entityManager->clear();
+            $offset += $batchSize;
+        } while (count($freelances) === $batchSize);
 
         return Command::SUCCESS;
     }
