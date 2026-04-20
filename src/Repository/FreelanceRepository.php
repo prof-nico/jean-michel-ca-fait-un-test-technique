@@ -32,9 +32,4 @@ class FreelanceRepository extends ServiceEntityRepository
 //        ;
 //    }
 
-    #[ArrayShape(['firstName' => "string", 'quantity' => "int"])]
-    public function findTheMostUseFirstname(): ?array
-    {
-        return [];
-    }
 }

@@ -15,6 +15,8 @@ readonly class FreelanceManager
 
     public function findTheMostUseFirstname(): ?string
     {
+        //je follow que ce soit declaré dans le repo mais en fonction du nombre, why not utiliser ES
+        //si on est chaud on met en cache également
         return $this->entityManager->getRepository(FreelanceConso::class)->findTheMostUseFirstname()['firstName'] ?? null;
     }
 
